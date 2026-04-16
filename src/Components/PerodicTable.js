@@ -95,23 +95,37 @@ const PeriodicTable = () => {
         </div>
   
         
-        {/* Element Information */}
-        <div className="periodic-table-container">
-
-        {selectedElement && (
-            <div className="element-details">
-            <h2>{selectedElement.name}</h2>
-            <p>Symbol:<b> {selectedElement.symbol}</b></p>
-            <p>Atomic Number: <b>{selectedElement.number}</b></p>
-            <p>Atomic Mass: <b>{selectedElement.atomic_mass}</b></p>
-            <p>Group: <b>{selectedElement.group}</b></p>
-            <p>Period: <b>{selectedElement.period}</b></p>
-            <p>Block: <b>{selectedElement.block}</b></p>
-            <p>Phase: <b>{selectedElement.phase}</b></p>
-            <p>Discovered by: <b>{selectedElement.discovered_by}</b></p>
+      {/* Element Information Modal */}
+      {selectedElement && (
+        <div className="modal-overlay" onClick={() => setSelectedElement(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="close-modal" onClick={() => setSelectedElement(null)}>&times;</button>
+            <div className="modal-header">
+              <div className="modal-symbol" style={{ backgroundColor: getBlockColor(selectedElement.block) }}>
+                {selectedElement.symbol}
+              </div>
+              <div className="modal-title">
+                <h2>{selectedElement.name}</h2>
+                <span className="modal-category">{selectedElement.category}</span>
+              </div>
+            </div>
+            
+            <div className="modal-body">
+              <p><strong>Atomic Number:</strong> {selectedElement.number}</p>
+              <p><strong>Atomic Mass:</strong> {selectedElement.atomic_mass}</p>
+              <p><strong>Electron Config:</strong> {selectedElement.electron_configuration_semantic}</p>
+              <p><strong>Group:</strong> {selectedElement.group || 'N/A'}</p>
+              <p><strong>Period:</strong> {selectedElement.period}</p>
+              <p><strong>Phase:</strong> {selectedElement.phase}</p>
+              <p style={{ gridColumn: "1 / -1" }}><strong>Discovered by:</strong> {selectedElement.discovered_by || 'Unknown'}</p>
+            </div>
+            
+            <div className="modal-footer">
+              <p><strong>Summary:</strong> {selectedElement.summary}</p>
+            </div>
           </div>
-        )}
         </div>
+      )}
     </div>
   );
 };
