@@ -17,6 +17,11 @@ const PeriodicTable = () => {
     classify: classifyElement,
   });
 
+    // Tooltip state
+  const [hoveredElement, setHoveredElement] = useState(null);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0, placement: "top" });
+  const hoverTimeoutRef = useRef(null);
   const elementRefs = useRef({});
   const tableRef = useRef(null);
 
@@ -41,6 +46,43 @@ const PeriodicTable = () => {
       ref.classList.add("element-pulse");
       setTimeout(() => ref.classList.remove("element-pulse"), 1200);
     }
+  }, []);
+    // Tooltip handlers
+   const showTooltip = useCallback((element, event) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const tableRect = tableRef.current?.getBoundingClientRect();
+
+    if (!tableRect) return;
+
+    const tooltipWidth = 240;
+    const tooltipHeight = 120;
+    const gap = 12;
+
+    let x = rect.left + rect.width / 2 - tableRect.left;
+    let y = rect.top - tableRect.top - gap;
+    let placement = "top";
+
+    if (rect.top - tableRect.top < tooltipHeight + 10) {
+      y = rect.bottom - tableRect.top + gap;
+      placement = "bottom";
+    }
+
+    x = Math.max(
+      tooltipWidth / 2 + 8,
+      Math.min(x, tableRect.width - tooltipWidth / 2 - 8)
+    );
+
+    setHoveredElement(element);
+    setTooltipPosition({ x, y, placement });
+    setTooltipVisible(true);
+  }, []);
+
+  const hideTooltip = useCallback(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setTooltipVisible(false);
+    setHoveredElement(null);
   }, []);
 
   // Determine if an element matches current search + filters
@@ -106,6 +148,11 @@ const PeriodicTable = () => {
         onClick={() => {
           if (visible) handleElementClick(element);
         }}
+        onMouseEnter={visible ? (e) => showTooltip(element, e) : undefined}
+        onMouseLeave={hideTooltip}
+        onFocus={visible ? (e) => showTooltip(element, e) : undefined}
+        onBlur={hideTooltip}
+        tabIndex={visible ? 0 : -1}
         title={visible ? `${element.name} (${element.symbol}) - #${element.number}` : ""}
       >
         <strong className={`element-block ${element.block}`}>
@@ -164,6 +211,47 @@ const PeriodicTable = () => {
             gridColumn: element.group,
             gridRow: element.period,
           })
+        )}
+                {/* ADVANCED HOVER TOOLTIP */}
+        {hoveredElement && tooltipVisible && (
+          <div
+            className={`element-tooltip ${tooltipPosition.placement}`}
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+            }}
+            onMouseEnter={() => clearTimeout(hoverTimeoutRef.current)}
+            onMouseLeave={hideTooltip}
+            role="tooltip"
+            aria-label={`${hoveredElement.name} details`}
+          >
+            <div className="tooltip-header">
+              <div className="tooltip-symbol" style={{ backgroundColor: getBlockColor(hoveredElement.block) }}>
+                {hoveredElement.symbol}
+              </div>
+              <div>
+                <div className="tooltip-name">{hoveredElement.name}</div>
+                <div className="tooltip-number">#{hoveredElement.number}</div>
+              </div>
+            </div>
+            <div className="tooltip-details">
+              <div className="tooltip-row">
+                <span>Mass:</span>
+                <span>{hoveredElement.atomic_mass ? parseFloat(hoveredElement.atomic_mass).toFixed(3) : "—"}</span>
+              </div>
+              {hoveredElement.category && (
+                <div className="tooltip-row">
+                  <span>Type:</span>
+                  <span>{hoveredElement.category}</span>
+                </div>
+              )}
+              <div className="tooltip-row">
+                <span>Block:</span>
+                <span>{hoveredElement.block}</span>
+              </div>
+            </div>
+            <div className={`tooltip-arrow ${tooltipPosition.placement}`}></div>
+          </div>
         )}
       </div>
 
