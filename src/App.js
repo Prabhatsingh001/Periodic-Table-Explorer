@@ -28,7 +28,7 @@ function App() {
     Interactive chemistry experience built with React
   </p>
 </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="btn" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             onClick={() => setQuizOpen(true)}
             style={{
