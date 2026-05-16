@@ -5,7 +5,7 @@ import getBlockColor from "./blockColor";
 import { getMainElements, getLanthanides, getActinides } from "./filterBlocks";
 import SmallBox from "./SmallBox";
 import SearchBar from "./SearchBar";
-import FilterPanel, { classifyElement } from "./FilterPanel";
+import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
 import { useElement } from "../contexts/ElementContext";
 
 const PeriodicTable = () => {
@@ -15,6 +15,9 @@ const PeriodicTable = () => {
     type: "all",
     period: "all",
     group: "all",
+    phases: [],
+    electronAffinity: "all",
+    category: "all",
     classify: classifyElement,
   });
 
@@ -125,6 +128,40 @@ const PeriodicTable = () => {
         if (element.group !== filters.group) return false;
       }
 
+      // Category filter (element type like "lanthanide", "alkali metal", etc.)
+      if (filters.category !== "all") {
+        if (!element.category || !element.category.toLowerCase().includes(filters.category.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Physical phase filter
+      if (filters.phases.length > 0) {
+        const phase = element.phase ? element.phase.toLowerCase() : "";
+        const hasMatchingPhase = filters.phases.some(p => phase === p.toLowerCase());
+        if (!hasMatchingPhase) return false;
+      }
+
+      // Electron affinity filter
+      if (filters.electronAffinity !== "all") {
+        const ea = element.electron_affinity;
+        if (ea !== undefined && ea !== null) {
+          switch (filters.electronAffinity) {
+            case "high-positive":
+              if (ea <= 100) return false;
+              break;
+            case "positive":
+              if (ea < 0 || ea > 100) return false;
+              break;
+            case "low":
+              if (ea >= 0) return false;
+              break;
+            default:
+              break;
+          }
+        }
+      }
+
       return true;
     },
     [searchQuery, filters, hoveredBlock]
@@ -140,7 +177,7 @@ const PeriodicTable = () => {
     return elementsData.filter(isElementVisible).length;
   }, [isElementVisible]);
 
-  const hasActiveFilters = searchQuery || filters.type !== "all" || filters.period !== "all" || filters.group !== "all";
+  const hasActiveFilters = searchQuery || filters.type !== "all" || filters.period !== "all" || filters.group !== "all" || filters.phases.length > 0 || filters.electronAffinity !== "all" || filters.category !== "all";
 
   // Render element cell
   const renderElement = (element, gridStyle = {}) => {
@@ -192,7 +229,7 @@ const PeriodicTable = () => {
           onSearch={handleSearch}
           onSelectElement={handleSelectElement}
         />
-        <FilterPanel onFilterChange={handleFilterChange} />
+        <AdvancedFilterPanel onFilterChange={handleFilterChange} />
 
         {hasActiveFilters && (
           <div className="results-count">
