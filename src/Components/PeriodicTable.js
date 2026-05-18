@@ -1,7 +1,25 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, { useState } from "react";
 import elementsData from "../Data/elementsData";
 import "./PeriodicTable.css";
 import getBlockColor from "./blockColor";
+
+import {
+  getMainElements,
+  getLanthanides,
+  getActinides,
+} from "./filterBlocks";
+
+const PeriodicTable = () => {
+  const [selectedElement, setSelectedElement] = useState(null);
+
+  const mainElements = getMainElements(elementsData);
+  const lanthanides = getLanthanides(elementsData);
+  const actinides = getActinides(elementsData);
+
+  return (
+    <div className="periodic-table-wrapper">
+      <h1>Periodic Table Explorer</h1>
+
 import { getMainElements, getLanthanides, getActinides } from "./filterBlocks";
 import SmallBox from "./SmallBox";
 import SearchBar from "./SearchBar";
@@ -230,303 +248,90 @@ const PeriodicTable = () => {
           onSelectElement={handleSelectElement}
         />
         <AdvancedFilterPanel onFilterChange={handleFilterChange} />
+main
 
-        {hasActiveFilters && (
-          <div className="results-count">
-            <span className="results-count-number">{visibleCount}</span>
-            <span className="results-count-label">
-              of {elementsData.length} elements
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Legend */}
-      <div className="box-container">
-        <div 
-          className="legend-item"
-          onMouseEnter={() => setHoveredBlock('s')}
-          onMouseLeave={() => setHoveredBlock(null)}
-          style={{ cursor: 'pointer' }}
-        >
-          <SmallBox color="skyblue" />
-          <span>s block</span>
-        </div>
-        <div 
-          className="legend-item"
-          onMouseEnter={() => setHoveredBlock('d')}
-          onMouseLeave={() => setHoveredBlock(null)}
-          style={{ cursor: 'pointer' }}
-        >
-          <SmallBox color="orange" />
-          <span>d block</span>
-        </div>
-        <div 
-          className="legend-item"
-          onMouseEnter={() => setHoveredBlock('p')}
-          onMouseLeave={() => setHoveredBlock(null)}
-          style={{ cursor: 'pointer' }}
-        >
-          <SmallBox color="#4ade80" />
-          <span>p block</span>
-        </div>
-        <div 
-          className="legend-item"
-          onMouseEnter={() => setHoveredBlock('f')}
-          onMouseLeave={() => setHoveredBlock(null)}
-          style={{ cursor: 'pointer' }}
-        >
-          <SmallBox color="#a78bfa" />
-          <span>f block</span>
-        </div>
-      </div>
-
-      {/* Main Periodic Table */}
-      <div className="periodic-table" ref={tableRef}>
-        {mainElements.map((element) =>
-          renderElement(element, {
-            gridColumn: element.group,
-            gridRow: element.period,
-          })
-        )}
-                {/* ADVANCED HOVER TOOLTIP */}
-        {hoveredElement && tooltipVisible && (
+      <div className="periodic-table">
+        {mainElements.map((element) => (
           <div
-            className={`element-tooltip ${tooltipPosition.placement}`}
+            key={element.number}
+            className="element"
             style={{
-              left: `${tooltipPosition.x}px`,
-              top: `${tooltipPosition.y}px`,
+              gridColumn: element.group,
+              gridRow: element.period,
+              backgroundColor: getBlockColor(element.block),
             }}
-            onMouseEnter={() => clearTimeout(hoverTimeoutRef.current)}
-            onMouseLeave={hideTooltip}
-            role="tooltip"
-            aria-label={`${hoveredElement.name} details`}
+            onClick={() => setSelectedElement(element)}
           >
-            <div className="tooltip-header">
-              <div className="tooltip-symbol" style={{ backgroundColor: getBlockColor(hoveredElement.block) }}>
-                {hoveredElement.symbol}
-              </div>
-              <div>
-                <div className="tooltip-name">{hoveredElement.name}</div>
-                <div className="tooltip-number">#{hoveredElement.number}</div>
-              </div>
-            </div>
-            <div className="tooltip-details">
-              <div className="tooltip-row">
-                <span>Mass:</span>
-                <span>{hoveredElement.atomic_mass ? parseFloat(hoveredElement.atomic_mass).toFixed(3) : "—"}</span>
-              </div>
-              {hoveredElement.category && (
-                <div className="tooltip-row">
-                  <span>Type:</span>
-                  <span>{hoveredElement.category}</span>
-                </div>
-              )}
-              <div className="tooltip-row">
-                <span>Block:</span>
-                <span>{hoveredElement.block}</span>
-              </div>
-            </div>
-            <div className={`tooltip-arrow ${tooltipPosition.placement}`}></div>
+            <strong>{element.symbol}</strong>
+            <span>{element.number}</span>
           </div>
-        )}
+        ))}
       </div>
 
-      {/* Lanthanides Row */}
       <div className="f-block">
-        {lanthanides.map((element, index) =>
-          renderElement(element, {
-            gridColumn: index + 4,
-          })
-        )}
-      </div>
-
-      {/* Actinides Row */}
-      <div className="f-block">
-        {actinides.map((element, index) =>
-          renderElement(element, {
-            gridColumn: index + 4,
-          })
-        )}
-      </div>
-
-      {/* Element Information Panel */}
-      {selectedElement && (
-        <div className="element-details-overlay" onClick={() => setSelectedElement(null)}>
+        {lanthanides.map((element, index) => (
           <div
-            className="element-details"
+            key={element.number}
+            className="element"
+            style={{
+              gridColumn: index + 4,
+              backgroundColor: getBlockColor(element.block),
+            }}
+            onClick={() => setSelectedElement(element)}
+          >
+            <strong>{element.symbol}</strong>
+            <span>{element.number}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="f-block">
+        {actinides.map((element, index) => (
+          <div
+            key={element.number}
+            className="element"
+            style={{
+              gridColumn: index + 4,
+              backgroundColor: getBlockColor(element.block),
+            }}
+            onClick={() => setSelectedElement(element)}
+          >
+            <strong>{element.symbol}</strong>
+            <span>{element.number}</span>
+          </div>
+        ))}
+      </div>
+
+      {selectedElement && (
+        <div
+          className="modal-overlay"
+          onClick={() => setSelectedElement(null)}
+        >
+          <div
+            className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="details-close-btn"
+              className="close-modal"
               onClick={() => setSelectedElement(null)}
-              aria-label="Close details"
-              id="details-close-btn"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
+              ×
             </button>
 
-            <div className="details-header">
-              <div
-                className="details-symbol-badge"
-                style={{ background: getBlockColor(selectedElement.block) }}
-              >
-                {selectedElement.symbol}
-              </div>
-              <div className="details-title">
-                <h2>{selectedElement.name}</h2>
-                <span className="details-category">{selectedElement.category}</span>
-              </div>
-            </div>
+            <h2>{selectedElement.name}</h2>
 
-            {selectedElement.bohr_model_3d && (
-              <div className="model-viewer-container">
-                <model-viewer
-                  src={selectedElement.bohr_model_3d}
-                  alt={`3D Bohr model of ${selectedElement.name}`}
-                  auto-rotate
-                  camera-controls
-                  ar
-                  style={{ width: '100%', height: '250px', outline: 'none' }}
-                ></model-viewer>
-                <div className="model-viewer-hint">Drag to rotate • Scroll to zoom • AR enabled</div>
-                </div>
-                )}
+            <p>
+              <strong>Symbol:</strong> {selectedElement.symbol}
+            </p>
 
-            {/* Element Image */}
-            {selectedElement.image?.url ? (
-              <div className="details-image-wrapper">
-                <img
-                  src={selectedElement.image.url}
-                  alt={selectedElement.image.title || selectedElement.name}
-                  className="details-element-image"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                />
-                {selectedElement.image.title && (
-                  <p className="details-image-caption">{selectedElement.image.title}</p>
-                )}
-              </div>
-            ) : (
-              <div className="details-image-placeholder">
-                <span className="details-image-placeholder-symbol">{selectedElement.symbol}</span>
-                <span className="details-image-placeholder-text">No image available</span>
-              </div>
-            )}
+            <p>
+              <strong>Atomic Number:</strong> {selectedElement.number}
+            </p>
 
-            <div className="details-grid">
-              <div className="detail-item">
-                <span className="detail-label">Atomic Number</span>
-                <span className="detail-value">{selectedElement.number}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Atomic Mass</span>
-                <span className="detail-value">
-                  {selectedElement.atomic_mass != null
-                    ? parseFloat(selectedElement.atomic_mass).toFixed(4)
-                    : "—"}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Group</span>
-                <span className="detail-value">{selectedElement.group ?? "—"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Period</span>
-                <span className="detail-value">{selectedElement.period}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Block</span>
-                <span className="detail-value">{selectedElement.block}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Phase</span>
-                <span className="detail-value">{selectedElement.phase ?? "—"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Melting Point</span>
-                <span className="detail-value">
-                  {selectedElement.melt != null ? `${selectedElement.melt} K` : "—"}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Boiling Point</span>
-                <span className="detail-value">
-                  {selectedElement.boil != null ? `${selectedElement.boil} K` : "—"}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Electron Affinity</span>
-                <span className="detail-value">
-                  {selectedElement.electron_affinity != null
-                    ? `${selectedElement.electron_affinity} kJ/mol`
-                    : "—"}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Named By</span>
-                <span className="detail-value">{selectedElement.named_by ?? "—"}</span>
-              </div>
-              <div className="detail-item detail-item-full">
-                <span className="detail-label">Appearance</span>
-                <span className="detail-value">{selectedElement.appearance ?? "—"}</span>
-              </div>
-              <div className="detail-item detail-item-full">
-                <span className="detail-label">Discovered by</span>
-                <span className="detail-value">{selectedElement.discovered_by ?? "Unknown"}</span>
-              </div>
-              {selectedElement.electron_configuration_semantic && (
-                <div className="detail-item detail-item-full">
-                  <span className="detail-label">Electron Configuration</span>
-                  <span className="detail-value detail-value-mono">
-                    {selectedElement.electron_configuration_semantic}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="details-actions">
-              <a
-                className="details-gallery-btn"
-                href={getElementGalleryUrl(selectedElement)}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                View Gallery
-              </a>
-              {selectedElement.source && (
-                <a
-                  className="details-wiki-btn"
-                  href={selectedElement.source}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Learn more on Wikipedia →
-                </a>
-              )}
-            </div>
-
-            {/* Spectral image */}
-            {selectedElement.spectral_img && (
-              <div className="details-spectral">
-                <span className="detail-label">Spectral Image</span>
-                <a
-                  href={selectedElement.spectral_img}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="details-spectral-link"
-                >
-                  View spectral lines →
-                </a>
-              </div>
-            )}
-
-            {selectedElement.summary && (
-              <p className="details-summary">{selectedElement.summary}</p>
-            )}
+            <p>
+              <strong>Electron Configuration:</strong>{" "}
+              {selectedElement.electron_configuration_semantic}
+            </p>
           </div>
         </div>
       )}
