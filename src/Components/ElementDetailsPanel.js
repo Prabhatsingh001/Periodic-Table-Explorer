@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useElement } from '../contexts/ElementContext';
 import elementDetailsData from '../Data/elementDetailsData';
+import { exportJson, exportCsv } from '../utils/exportData';
 import './ElementDetailsPanel.css';
 
 const ElementDetailsPanel = () => {
@@ -36,6 +37,59 @@ const ElementDetailsPanel = () => {
     setIsOpen(false);
   };
 
+  const safeCsvValue = (value) => {
+    if (value === null || value === undefined) return '';
+    if (Array.isArray(value)) return value.join(' | ');
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+  };
+
+  const handleExportDetailsJson = () => {
+    const exportPayload = {
+      selectedElement,
+      details,
+      exportedAt: new Date().toISOString(),
+    };
+
+    exportJson(
+      `${selectedElement.symbol}-${selectedElement.number}-details-${Date.now()}`,
+      exportPayload
+    );
+  };
+
+  const handleExportDetailsCsv = () => {
+    const rows = [
+      {
+        'Atomic Number': selectedElement.number,
+        Symbol: selectedElement.symbol,
+        Name: selectedElement.name,
+        Category: selectedElement.category,
+        Phase: selectedElement.phase,
+        Period: selectedElement.period,
+        Group: selectedElement.group,
+        'Atomic Mass': selectedElement.atomic_mass,
+        Density: selectedElement.density,
+        'Electronegativity (Pauling)': selectedElement.electronegativity_pauling,
+        '1st Ionization Energy': selectedElement.ionization_energies?.[0] ?? '',
+        'Melting Point (K)': selectedElement.melt,
+        'Boiling Point (K)': selectedElement.boil,
+        'Discovered By': selectedElement.discovered_by,
+        'Year Discovered': details?.year_discovered,
+        'Oxidation States': safeCsvValue(details?.oxidation_states),
+        'Common Uses': safeCsvValue(details?.common_uses),
+        Orbitals: details?.orbitals,
+        'Historical Significance': details?.historical_significance,
+        Summary: selectedElement.summary,
+      },
+    ];
+
+    exportCsv(
+      `${selectedElement.symbol}-${selectedElement.number}-details-${Date.now()}`,
+      rows,
+      Object.keys(rows[0]).map((label) => ({ key: label, label }))
+    );
+  };
+
   if (!selectedElement) {
     return null;
   }
@@ -66,6 +120,15 @@ const ElementDetailsPanel = () => {
           </div>
           <button className="close-btn" onClick={handleClose} aria-label="Close panel">
             ✕
+          </button>
+        </div>
+
+        <div className="panel-actions">
+          <button className="export-btn" onClick={handleExportDetailsJson} type="button">
+            Export JSON
+          </button>
+          <button className="export-btn" onClick={handleExportDetailsCsv} type="button">
+            Export CSV
           </button>
         </div>
 
