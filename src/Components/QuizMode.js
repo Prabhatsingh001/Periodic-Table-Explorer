@@ -156,6 +156,21 @@ function setHighScoreMap(map) {
   window.localStorage?.setItem(LS_KEY, JSON.stringify(map));
 }
 
+const SESSION_HISTORY_KEY = "quizRecentSessions_v1";
+const MAX_HISTORY_ENTRIES = 5;
+
+function getRecentQuizSessions() {
+  if (typeof window === "undefined") return [];
+  const raw = window.localStorage?.getItem(SESSION_HISTORY_KEY);
+  const parsed = safeParseJSON(raw, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function setRecentQuizSessions(sessions) {
+  if (typeof window === "undefined") return;
+  window.localStorage?.setItem(SESSION_HISTORY_KEY, JSON.stringify(sessions));
+}
+
 function makeRecordKey({ category, difficulty, mode }) {
   return `${category}|${difficulty}|${mode}`;
 }
@@ -193,6 +208,8 @@ const QuizMode = ({ onClose }) => {
   const [total, setTotal] = useState(0);
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  const [questionHistory, setQuestionHistory] = useState([]);
+  const [sessionHistorySaved, setSessionHistorySaved] = useState(false);
   const nextBtnRef = useRef(null);
 
   const [timeLeft, setTimeLeft] = useState(null);
@@ -244,6 +261,8 @@ const QuizMode = ({ onClose }) => {
     setStreak(0);
     setBestStreak(0);
     setTimedOut(false);
+    setQuestionHistory([]);
+    setSessionHistorySaved(false);
 
     const nextQ = generateQuestion({
       elements: selectedElements,
@@ -295,6 +314,21 @@ const QuizMode = ({ onClose }) => {
       map[recordKey] = nextRecord;
       setHighScoreMap(map);
     }
+
+    const sessions = getRecentQuizSessions();
+    const newSession = {
+      playedAt: new Date().toISOString(),
+      category: settings.category,
+      difficulty: settings.difficulty,
+      mode: settings.mode,
+      score,
+      accuracy,
+      bestStreak,
+      total: questionCount,
+    };
+
+    setRecentQuizSessions([newSession, ...sessions].slice(0, MAX_HISTORY_ENTRIES));
+    setSessionHistorySaved(true);
   }, [accuracy, bestStreak, score, settings, clearAutoAdvance, stopTimer]);
 
   const goNext = useCallback(() => {
@@ -340,6 +374,18 @@ const QuizMode = ({ onClose }) => {
       setSelected(option);
       setTotal((t) => t + 1);
 
+      setQuestionHistory((history) => [
+        ...history,
+        {
+          prompt: question.prompt,
+          selectedAnswer: option,
+          correctAnswer: question.correctAnswer,
+          timedOut: false,
+          isCorrect: correct,
+          element: question.element,
+        },
+      ]);
+
       if (correct) {
         setScore((s) => s + 1);
         setStreak((s) => {
@@ -351,7 +397,7 @@ const QuizMode = ({ onClose }) => {
         setStreak(0);
       }
     },
-    [isAnswered, question.correctAnswer]
+    [isAnswered, question.correctAnswer, question.prompt, question.element]
   );
 
   const handleSelect = useCallback(
@@ -368,12 +414,24 @@ const QuizMode = ({ onClose }) => {
     setTotal((t) => t + 1);
     setStreak(0);
 
+    setQuestionHistory((history) => [
+      ...history,
+      {
+        prompt: question.prompt,
+        selectedAnswer: null,
+        correctAnswer: question.correctAnswer,
+        timedOut: true,
+        isCorrect: false,
+        element: question.element,
+      },
+    ]);
+
     // After feedback delay, auto-advance
     clearAutoAdvance();
     timeoutAutoAdvanceRef.current = setTimeout(() => {
       goNext();
     }, 900);
-  }, [clearAutoAdvance, goNext, isAnswered]);
+  }, [clearAutoAdvance, goNext, isAnswered, question.prompt, question.correctAnswer, question.element]);
 
 
   useEffect(() => {
@@ -597,6 +655,36 @@ const QuizMode = ({ onClose }) => {
               <span>Category: {QUIZ_CATEGORIES.find((c) => c.key === settings.category)?.label || settings.category}</span>
               <span>Difficulty: {DIFFICULTIES.find((d) => d.key === settings.difficulty)?.label || settings.difficulty}</span>
               <span>Mode: {settings.mode === "timed" ? `Timed (${timeLimitSeconds}s)` : "Normal"}</span>
+            </div>
+
+            {sessionHistorySaved && (
+              <div className="quiz-session-note">Recent session saved to history.</div>
+            )}
+          </div>
+
+          <div className="quiz-review-section">
+            <div className="quiz-review-title">Review Answers</div>
+            <div className="quiz-review-list">
+              {questionHistory.map((item, index) => {
+                const correct = item.selectedAnswer === item.correctAnswer;
+                return (
+                  <article key={index} className={`quiz-review-item ${correct ? "review-correct" : "review-wrong"}`}>
+                    <div className="quiz-review-row quiz-review-row-header">
+                      <span className="quiz-review-index">Question {index + 1}</span>
+                      {item.timedOut ? <span className="quiz-review-timeout">⏰ Timed out</span> : null}
+                    </div>
+                    <div className="quiz-review-prompt">{item.prompt}</div>
+                    <div className="quiz-review-row">
+                      <span className="quiz-review-label">Your answer</span>
+                      <span className="quiz-review-answer">{item.timedOut ? "No answer" : item.selectedAnswer}</span>
+                    </div>
+                    <div className="quiz-review-row">
+                      <span className="quiz-review-label">Correct answer</span>
+                      <span className="quiz-review-answer">{item.correctAnswer}</span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
 
