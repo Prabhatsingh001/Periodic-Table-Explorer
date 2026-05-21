@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import ChartComponent from './ChartComponent';
 import { getTrendData, propertyKeys, propertyLabels } from './utils';
+import { exportJson, exportCsv } from '../../utils/exportData';
 import './Trends.css';
 
 const Trends = () => {
@@ -18,6 +19,48 @@ const Trends = () => {
     // Reset selected value to a valid default for the new mode
     if (newMode === 'period') setSelectedValue('2');
     if (newMode === 'group') setSelectedValue('1');
+  };
+
+  const exportRows = chartDataArray.map((item) => ({
+    atomicNumber: item.element.number,
+    symbol: item.element.symbol,
+    name: item.element.name,
+    category: item.element.category,
+    period: item.element.period,
+    group: item.element.group,
+    value: item.value,
+    valueLabel: propertyLabels[property],
+  }));
+
+  const trendMeta = {
+    generatedAt: new Date().toISOString(),
+    property: propertyLabels[property],
+    propertyKey: propertyKeys[property],
+    viewMode,
+    selectedValue,
+  };
+
+  const handleExportTrendJson = () => {
+    exportJson(
+      `trends-${property}-${viewMode}-${selectedValue}-${Date.now()}`,
+      { metadata: trendMeta, data: exportRows }
+    );
+  };
+
+  const handleExportTrendCsv = () => {
+    exportCsv(
+      `trends-${property}-${viewMode}-${selectedValue}-${Date.now()}`,
+      exportRows,
+      [
+        { key: 'atomicNumber', label: 'Atomic Number' },
+        { key: 'symbol', label: 'Symbol' },
+        { key: 'name', label: 'Name' },
+        { key: 'category', label: 'Category' },
+        { key: 'period', label: 'Period' },
+        { key: 'group', label: 'Group' },
+        { key: 'value', label: propertyLabels[property] },
+      ]
+    );
   };
 
   return (
@@ -78,6 +121,16 @@ const Trends = () => {
             }
           </select>
         </div>
+      </div>
+
+      <div className="trends-actions">
+        <span className="trends-action-label">Export current trend data</span>
+        <button className="trends-export-btn" onClick={handleExportTrendJson} type="button">
+          Export JSON
+        </button>
+        <button className="trends-export-btn" onClick={handleExportTrendCsv} type="button">
+          Export CSV
+        </button>
       </div>
 
       <div className="chart-wrapper">
