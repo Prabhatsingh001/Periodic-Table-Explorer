@@ -1,29 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import elementsData from "../Data/elementsData";
 import "./PeriodicTable.css";
 import getBlockColor from "./blockColor";
-
-import {
-  getMainElements,
-  getLanthanides,
-  getActinides,
-} from "./filterBlocks";
-
-const PeriodicTable = () => {
-  const [selectedElement, setSelectedElement] = useState(null);
-
-  const mainElements = getMainElements(elementsData);
-  const lanthanides = getLanthanides(elementsData);
-  const actinides = getActinides(elementsData);
-
-  return (
-    <div className="periodic-table-wrapper">
-      <h1>Periodic Table Explorer</h1>
-
 import { getMainElements, getLanthanides, getActinides } from "./filterBlocks";
 import SmallBox from "./SmallBox";
 import SearchBar from "./SearchBar";
-import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
+import FilterPanel, { classifyElement } from "./FilterPanel";
 import { useElement } from "../contexts/ElementContext";
 
 const PeriodicTable = () => {
@@ -33,15 +15,13 @@ const PeriodicTable = () => {
     type: "all",
     period: "all",
     group: "all",
-    phases: [],
-    electronAffinity: "all",
-    category: "all",
     classify: classifyElement,
   });
 
   const [hoveredBlock, setHoveredBlock] = useState(null);
 
-    // Tooltip state
+
+  // Tooltip state
   const [hoveredElement, setHoveredElement] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0, placement: "top" });
@@ -71,8 +51,8 @@ const PeriodicTable = () => {
       setTimeout(() => ref.classList.remove("element-pulse"), 1200);
     }
   }, [setSelectedElement]);
-    // Tooltip handlers
-   const showTooltip = useCallback((element, event) => {
+  // Tooltip handlers
+  const showTooltip = useCallback((element, event) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
 
     const rect = event.currentTarget.getBoundingClientRect();
@@ -109,7 +89,7 @@ const PeriodicTable = () => {
     setHoveredElement(null);
   }, []);
 
-   const getElementGalleryUrl = useCallback((element) => {
+  const getElementGalleryUrl = useCallback((element) => {
     const query = encodeURIComponent(`${element.name} element`);
     return `https://commons.wikimedia.org/w/index.php?search=${query}&title=Special:MediaSearch&type=image`;
   }, []);
@@ -118,8 +98,8 @@ const PeriodicTable = () => {
   const isElementVisible = useCallback(
     (element) => {
       // Hovered Block Filter
-      if (hoveredBlock && element.block !== hoveredBlock) return false;
-
+      const isBlockMatched = !hoveredBlock || element.block === hoveredBlock;
+      if (!isBlockMatched) return false;
       // Search filter
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
@@ -146,40 +126,6 @@ const PeriodicTable = () => {
         if (element.group !== filters.group) return false;
       }
 
-      // Category filter (element type like "lanthanide", "alkali metal", etc.)
-      if (filters.category !== "all") {
-        if (!element.category || !element.category.toLowerCase().includes(filters.category.toLowerCase())) {
-          return false;
-        }
-      }
-
-      // Physical phase filter
-      if (filters.phases.length > 0) {
-        const phase = element.phase ? element.phase.toLowerCase() : "";
-        const hasMatchingPhase = filters.phases.some(p => phase === p.toLowerCase());
-        if (!hasMatchingPhase) return false;
-      }
-
-      // Electron affinity filter
-      if (filters.electronAffinity !== "all") {
-        const ea = element.electron_affinity;
-        if (ea !== undefined && ea !== null) {
-          switch (filters.electronAffinity) {
-            case "high-positive":
-              if (ea <= 100) return false;
-              break;
-            case "positive":
-              if (ea < 0 || ea > 100) return false;
-              break;
-            case "low":
-              if (ea >= 0) return false;
-              break;
-            default:
-              break;
-          }
-        }
-      }
-
       return true;
     },
     [searchQuery, filters, hoveredBlock]
@@ -195,7 +141,7 @@ const PeriodicTable = () => {
     return elementsData.filter(isElementVisible).length;
   }, [isElementVisible]);
 
-  const hasActiveFilters = searchQuery || filters.type !== "all" || filters.period !== "all" || filters.group !== "all" || filters.phases.length > 0 || filters.electronAffinity !== "all" || filters.category !== "all";
+  const hasActiveFilters = searchQuery || filters.type !== "all" || filters.period !== "all" || filters.group !== "all";
 
   // Render element cell
   const renderElement = (element, gridStyle = {}) => {
@@ -221,15 +167,6 @@ const PeriodicTable = () => {
         tabIndex={visible ? 0 : -1}
         title={visible ? `${element.name} (${element.symbol}) - #${element.number}` : ""}
       >
-        {element.bohr_model_image && (
-          <img
-            src={element.bohr_model_image}
-            alt=""
-            className="element-bg-image"
-            loading="lazy"
-            aria-hidden="true"
-          />
-        )}
         <strong className={`element-block ${element.block}`}>
           {element.symbol}
         </strong>
@@ -247,91 +184,214 @@ const PeriodicTable = () => {
           onSearch={handleSearch}
           onSelectElement={handleSelectElement}
         />
-        <AdvancedFilterPanel onFilterChange={handleFilterChange} />
-main
+        <FilterPanel onFilterChange={handleFilterChange} />
 
-      <div className="periodic-table">
-        {mainElements.map((element) => (
-          <div
-            key={element.number}
-            className="element"
-            style={{
-              gridColumn: element.group,
-              gridRow: element.period,
-              backgroundColor: getBlockColor(element.block),
-            }}
-            onClick={() => setSelectedElement(element)}
-          >
-            <strong>{element.symbol}</strong>
-            <span>{element.number}</span>
+        {hasActiveFilters && (
+          <div className="results-count">
+            <span className="results-count-number">{visibleCount}</span>
+            <span className="results-count-label">
+              of {elementsData.length} elements
+            </span>
           </div>
-        ))}
+        )}
       </div>
 
-      <div className="f-block">
-        {lanthanides.map((element, index) => (
-          <div
-            key={element.number}
-            className="element"
-            style={{
-              gridColumn: index + 4,
-              backgroundColor: getBlockColor(element.block),
-            }}
-            onClick={() => setSelectedElement(element)}
-          >
-            <strong>{element.symbol}</strong>
-            <span>{element.number}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="f-block">
-        {actinides.map((element, index) => (
-          <div
-            key={element.number}
-            className="element"
-            style={{
-              gridColumn: index + 4,
-              backgroundColor: getBlockColor(element.block),
-            }}
-            onClick={() => setSelectedElement(element)}
-          >
-            <strong>{element.symbol}</strong>
-            <span>{element.number}</span>
-          </div>
-        ))}
-      </div>
-
-      {selectedElement && (
+      {/* Legend */}
+      <div className="box-container">
         <div
-          className="modal-overlay"
-          onClick={() => setSelectedElement(null)}
+          className="legend-item"
+          onMouseEnter={() => setHoveredBlock('s')}
+          onMouseLeave={() => setHoveredBlock(null)}
+          style={{ cursor: 'pointer' }}
         >
+          <SmallBox color="skyblue" />
+          <span>s block</span>
+        </div>
+        <div
+          className="legend-item"
+          onMouseEnter={() => setHoveredBlock('d')}
+          onMouseLeave={() => setHoveredBlock(null)}
+          style={{ cursor: 'pointer' }}
+        >
+          <SmallBox color="orange" />
+          <span>d block</span>
+        </div>
+        <div
+          className="legend-item"
+          onMouseEnter={() => setHoveredBlock('p')}
+          onMouseLeave={() => setHoveredBlock(null)}
+          style={{ cursor: 'pointer' }}
+        >
+          <SmallBox color="#4ade80" />
+          <span>p block</span>
+        </div>
+        <div
+          className="legend-item"
+          onMouseEnter={() => setHoveredBlock('f')}
+          onMouseLeave={() => setHoveredBlock(null)}
+          style={{ cursor: 'pointer' }}
+        >
+          <SmallBox color="#a78bfa" />
+          <span>f block</span>
+        </div>
+      </div>
+
+      {/* Main Periodic Table */}
+      <div className="periodic-table" ref={tableRef}>
+        {mainElements.map((element) =>
+          renderElement(element, {
+            gridColumn: element.group,
+            gridRow: element.period,
+          })
+        )}
+        {/* ADVANCED HOVER TOOLTIP */}
+        {hoveredElement && tooltipVisible && (
           <div
-            className="modal-content"
+            className={`element-tooltip ${tooltipPosition.placement}`}
+            style={{
+              left: `${tooltipPosition.x}px`,
+              top: `${tooltipPosition.y}px`,
+            }}
+            onMouseEnter={() => clearTimeout(hoverTimeoutRef.current)}
+            onMouseLeave={hideTooltip}
+            role="tooltip"
+            aria-label={`${hoveredElement.name} details`}
+          >
+            <div className="tooltip-header">
+              <div className="tooltip-symbol" style={{ backgroundColor: getBlockColor(hoveredElement.block) }}>
+                {hoveredElement.symbol}
+              </div>
+              <div>
+                <div className="tooltip-name">{hoveredElement.name}</div>
+                <div className="tooltip-number">#{hoveredElement.number}</div>
+              </div>
+            </div>
+            <div className="tooltip-details">
+              <div className="tooltip-row">
+                <span>Mass:</span>
+                <span>{hoveredElement.atomic_mass ? parseFloat(hoveredElement.atomic_mass).toFixed(3) : "—"}</span>
+              </div>
+              {hoveredElement.category && (
+                <div className="tooltip-row">
+                  <span>Type:</span>
+                  <span>{hoveredElement.category}</span>
+                </div>
+              )}
+              <div className="tooltip-row">
+                <span>Block:</span>
+                <span>{hoveredElement.block}</span>
+              </div>
+            </div>
+            <div className={`tooltip-arrow ${tooltipPosition.placement}`}></div>
+          </div>
+        )}
+      </div>
+
+      {/* Lanthanides Row */}
+      <div className="f-block">
+        {lanthanides.map((element, index) =>
+          renderElement(element, {
+            gridColumn: index + 4,       
+          })
+        )}
+      </div>
+
+      {/* Actinides Row */}
+      <div className="f-block">
+        {actinides.map((element, index) =>
+          renderElement(element, {
+            gridColumn: index + 4,
+          })
+        )}
+      </div>
+
+      {/* Element Information Panel */}
+      {selectedElement && (
+        <div className="element-details-overlay" onClick={() => setSelectedElement(null)}>
+          <div
+            className="element-details"
             onClick={(e) => e.stopPropagation()}
           >
             <button
-              className="close-modal"
+              className="details-close-btn"
               onClick={() => setSelectedElement(null)}
+              aria-label="Close details"
+              id="details-close-btn"
             >
-              ×
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
             </button>
 
-            <h2>{selectedElement.name}</h2>
+            <div className="details-header">
+              <div
+                className="details-symbol-badge"
+                style={{ background: getBlockColor(selectedElement.block) }}
+              >
+                {selectedElement.symbol}
+              </div>
+              <div className="details-title">
+                <h2>{selectedElement.name}</h2>
+                <span className="details-category">{selectedElement.category}</span>
+              </div>
+            </div>
 
-            <p>
-              <strong>Symbol:</strong> {selectedElement.symbol}
-            </p>
+            <div className="details-grid">
+              <div className="detail-item">
+                <span className="detail-label">Atomic Number</span>
+                <span className="detail-value">{selectedElement.number}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Atomic Mass</span>
+                <span className="detail-value">
+                  {selectedElement.atomic_mass != null
+                    ? parseFloat(selectedElement.atomic_mass).toFixed(4)
+                    : "—"}
+                </span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Group</span>
+                <span className="detail-value">{selectedElement.group ?? "—"}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Period</span>
+                <span className="detail-value">{selectedElement.period}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Block</span>
+                <span className="detail-value">{selectedElement.block}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Phase</span>
+                <span className="detail-value">{selectedElement.phase ?? "—"}</span>
+              </div>
+              <div className="detail-item detail-item-full">
+                <span className="detail-label">Discovered by</span>
+                <span className="detail-value">{selectedElement.discovered_by ?? "Unknown"}</span>
+              </div>
+              {selectedElement.electron_configuration_semantic && (
+                <div className="detail-item detail-item-full">
+                  <span className="detail-label">Electron Configuration</span>
+                  <span className="detail-value detail-value-mono">
+                    {selectedElement.electron_configuration_semantic}
+                  </span>
+                </div>
+              )}
+            </div>
 
-            <p>
-              <strong>Atomic Number:</strong> {selectedElement.number}
-            </p>
+            <a
+              className="details-gallery-btn"
+              href={getElementGalleryUrl(selectedElement)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View {selectedElement.name} Gallery
+            </a>
 
-            <p>
-              <strong>Electron Configuration:</strong>{" "}
-              {selectedElement.electron_configuration_semantic}
-            </p>
+            {selectedElement.summary && (
+              <p className="details-summary">{selectedElement.summary}</p>
+            )}
           </div>
         </div>
       )}
