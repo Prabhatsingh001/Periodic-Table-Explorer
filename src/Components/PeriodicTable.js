@@ -7,6 +7,26 @@ import SmallBox from "./SmallBox";
 import SearchBar from "./SearchBar";
 import FilterPanel, { classifyElement } from "./FilterPanel";
 import { useElement } from "../contexts/ElementContext";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef
+} from "react";
+import elementsData from "../Data/elementsData";
+import "./PeriodicTable.css";
+import getBlockColor from "./blockColor";
+import SmallBox from "./SmallBox";
+import SearchBar from "./SearchBar";
+import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
+import { useElement } from "../contexts/ElementContext";
+
+import {
+  getMainElements,
+  getLanthanides,
+  getActinides,
+} from "./filterBlocks";
+
 
 const PeriodicTable = () => {
   const { selectedElement, setSelectedElement } = useElement();
@@ -193,7 +213,9 @@ const PeriodicTable = () => {
               of {elementsData.length} elements
             </span>
           </div>
-        )}
+        
+        }}
+        <AdvancedFilterPanel onFilterChange={handleFilterChange} />
       </div>
 
       {/* Legend */}

@@ -136,12 +136,42 @@ const elementDetailsData = {
       "Medical treatments",
       "Investment"
     ],
+  
     isotopes: [
       { symbol: "¹⁹⁷Au", name: "Gold-197", abundance: "100%", half_life: "Stable" }
     ],
     orbitals: "[Xe] 4f¹⁴ 5d¹⁰ 6s¹",
     historical_significance: "Noble metal, valued for millennia"
   },
+  13: {
+  common_uses: [
+    "Aircraft bodies",
+    "Kitchen utensils",
+    "Beverage cans",
+    "Electrical transmission lines",
+    "Window frames"
+  ]
+},
+
+29: {
+  common_uses: [
+    "Electrical wiring",
+    "Motors",
+    "Electronics",
+    "Plumbing pipes",
+    "Coins"
+  ]
+},
+
+47: {
+  common_uses: [
+    "Jewelry",
+    "Photography",
+    "Electronics",
+    "Solar panels",
+    "Medical equipment"
+  ]
+}
 };
 
 export default elementDetailsData;

@@ -1,3 +1,4 @@
+import FlipCard from "./FlipCard";
 import React, { useEffect, useState } from 'react';
 import { useElement } from '../contexts/ElementContext';
 import elementDetailsData from '../Data/elementDetailsData';
@@ -205,17 +206,16 @@ const ElementDetailsPanel = () => {
             </section>
           )}
 
-          {/* Common Uses */}
           {details?.common_uses && details.common_uses.length > 0 && (
             <section className="panel-section">
-              <h3 className="section-title">Common Uses</h3>
-              <ul className="uses-list">
-                {details.common_uses.map((use, idx) => (
-                  <li key={idx}>{use}</li>
-                ))}
-              </ul>
+              <h3 className="section-title">Daily Uses</h3>
+
+              <FlipCard
+                title={selectedElement.name}
+                uses={details.common_uses}
+              />
             </section>
-          )}
+        )}
 
           {/* Isotopes */}
           {details?.isotopes && details.isotopes.length > 0 && (
