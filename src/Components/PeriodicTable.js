@@ -1,7 +1,16 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef
+} from "react";
 import elementsData from "../Data/elementsData";
 import "./PeriodicTable.css";
 import getBlockColor from "./blockColor";
+import SmallBox from "./SmallBox";
+import SearchBar from "./SearchBar";
+import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
+import { useElement } from "../contexts/ElementContext";
 
 import {
   getMainElements,
@@ -9,22 +18,7 @@ import {
   getActinides,
 } from "./filterBlocks";
 
-const PeriodicTable = () => {
-  const [selectedElement, setSelectedElement] = useState(null);
 
-  const mainElements = getMainElements(elementsData);
-  const lanthanides = getLanthanides(elementsData);
-  const actinides = getActinides(elementsData);
-
-  return (
-    <div className="periodic-table-wrapper">
-      <h1>Periodic Table Explorer</h1>
-
-import { getMainElements, getLanthanides, getActinides } from "./filterBlocks";
-import SmallBox from "./SmallBox";
-import SearchBar from "./SearchBar";
-import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
-import { useElement } from "../contexts/ElementContext";
 
 const PeriodicTable = () => {
   const { selectedElement, setSelectedElement } = useElement();
@@ -248,7 +242,7 @@ const PeriodicTable = () => {
           onSelectElement={handleSelectElement}
         />
         <AdvancedFilterPanel onFilterChange={handleFilterChange} />
-main
+      </div>
 
       <div className="periodic-table">
         {mainElements.map((element) => (

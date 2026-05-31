@@ -25,6 +25,10 @@ If you're an NSOC contributor, please check the [Contributing Guidelines](CONTRI
 * **Clean UI Design**: User-friendly and visually appealing interface.
 * **Component-Based Architecture**: Built with reusable React components for easy maintenance and scalability.
 * **Beginner-Friendly Contribution**: Ideal for developers looking to contribute to an educational open-source project.
+✨ New Feature:
+- Added interactive flip cards for elements
+- Shows real-world daily uses of metals
+- Improves learning experience with visual interaction
 
 ---
 
