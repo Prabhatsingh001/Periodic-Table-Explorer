@@ -206,16 +206,15 @@ const ElementDetailsPanel = () => {
             </section>
           )}
 
-          {details?.common_uses && details.common_uses.length > 0 && (
-            <section className="panel-section">
-              <h3 className="section-title">Daily Uses</h3>
-
-              <FlipCard
-                title={selectedElement.name}
-                uses={details.common_uses}
-              />
-            </section>
-        )}
+          {/* Daily Uses - Dynamic implementation with fallback logic */}
+          <section className="panel-section">
+            <h3 className="section-title">Daily Uses</h3>
+            <FlipCard
+              key={selectedElement.number}
+              symbol={selectedElement.symbol}
+              title={selectedElement.name}
+            />
+          </section>
 
           {/* Isotopes */}
           {details?.isotopes && details.isotopes.length > 0 && (
