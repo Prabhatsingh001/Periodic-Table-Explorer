@@ -764,3 +764,22 @@ model-viewer {
 .close-modal:hover {
   color: #ff6b6b;
 }
+.phase-solid {
+  border: 2px solid #3b82f6 !important;
+}
+
+.phase-liquid {
+  border: 2px solid #06b6d4 !important;
+}
+
+.phase-gas {
+  border: 2px solid #f97316 !important;
+}
+
+.phase-icon {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  pointer-events: none;
+}

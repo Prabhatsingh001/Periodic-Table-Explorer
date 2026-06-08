@@ -1,21 +1,34 @@
-import React, { useState, useCallback, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useRef
+} from "react";
 import elementsData from "../Data/elementsData";
 import "./PeriodicTable.css";
 import getBlockColor from "./blockColor";
-import { getMainElements, getLanthanides, getActinides } from "./filterBlocks";
 import SmallBox from "./SmallBox";
 import SearchBar from "./SearchBar";
-import FilterPanel from "./FilterPanel";
 import AdvancedFilterPanel, { classifyElement } from "./AdvancedFilterPanel";
 import { useElement } from "../contexts/ElementContext";
 
-const PeriodicTable = () => {
+import {
+  getMainElements,
+  getLanthanides,
+  getActinides,
+} from "./filterBlocks";
+
+
+const PeriodicTable = ({ temperature = 300 }) => {
   const { selectedElement, setSelectedElement } = useElement();
   const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState({
     type: "all",
     period: "all",
     group: "all",
+    phases: [],
+    electronAffinity: "all",
+    category: "all",
     classify: classifyElement,
   });
 
@@ -94,6 +107,39 @@ const PeriodicTable = () => {
     return `https://commons.wikimedia.org/w/index.php?search=${query}&title=Special:MediaSearch&type=image`;
   }, []);
 
+  const getPhase = useCallback((element) => {
+    if (element.melt == null || element.boil == null) {
+      return "unknown";
+    }
+
+    if (temperature < element.melt) {
+      return "solid";
+    }
+
+    if (temperature < element.boil) {
+      return "liquid";
+    }
+
+    return "gas";
+  }, [temperature]);
+
+  const matchesElectronAffinity = useCallback((element, range) => {
+    if (!range || range === "all") return true;
+    if (element.electron_affinity == null) return false;
+
+    switch (range) {
+      case "high-positive":
+        return element.electron_affinity > 100;
+      case "positive":
+        return element.electron_affinity >= 0 && element.electron_affinity <= 100;
+      case "low":
+        return element.electron_affinity < 0;
+      default:
+        return true;
+    }
+  }, []);
+
+  // Determine if an element matches current search + filters
   const isElementVisible = useCallback(
     (element) => {
       const isBlockMatched = !hoveredBlock || element.block === hoveredBlock;
@@ -121,9 +167,24 @@ const PeriodicTable = () => {
         if (element.group !== filters.group) return false;
       }
 
+      // Physical phase filter
+      if (filters.phases?.length) {
+        if (!filters.phases.includes(getPhase(element))) return false;
+      }
+
+      // Electron affinity filter
+      if (!matchesElectronAffinity(element, filters.electronAffinity)) {
+        return false;
+      }
+
+      // Category filter
+      if (filters.category && filters.category !== "all") {
+        if (element.category !== filters.category) return false;
+      }
+
       return true;
     },
-    [searchQuery, filters, hoveredBlock]
+    [searchQuery, filters, hoveredBlock, getPhase, matchesElectronAffinity]
   );
 
   const mainElements = useMemo(() => getMainElements(elementsData), []);
@@ -134,20 +195,52 @@ const PeriodicTable = () => {
     return elementsData.filter(isElementVisible).length;
   }, [isElementVisible]);
 
-  const hasActiveFilters = searchQuery || filters.type !== "all" || filters.period !== "all" || filters.group !== "all";
+  const hasActiveFilters =
+    searchQuery ||
+    filters.type !== "all" ||
+    filters.period !== "all" ||
+    filters.group !== "all" ||
+    filters.phases?.length > 0 ||
+    filters.electronAffinity !== "all" ||
+    filters.category !== "all";
 
+  // Render element cell
+const getPhaseIcon = (phase) => {
+  switch (phase) {
+    case "solid":
+      return "🧊";
+    case "liquid":
+      return "💧";
+    case "gas":
+      return "☁️";
+    default:
+      return "❓";
+  }
+};
   const renderElement = (element, gridStyle = {}) => {
     const visible = isElementVisible(element);
     const isSelected = selectedElement && selectedElement.number === element.number;
+    const phase = getPhase(element);
 
     return (
       <div
         key={element.number}
         ref={(el) => (elementRefs.current[element.number] = el)}
-        className={`element ${!visible ? "element-hidden" : ""} ${isSelected ? "element-selected" : ""}`}
+        className={`element
+${!visible ? "element-hidden" : ""}
+${isSelected ? "element-selected" : ""}
+phase-${phase}`}
         style={{
           ...gridStyle,
-          backgroundColor: visible ? getBlockColor(element.block) : undefined,
+          backgroundColor: visible
+  ? phase === "solid"
+    ? "#bfdbfe"
+    : phase === "liquid"
+    ? "#a5f3fc"
+    : phase === "gas"
+    ? "#fed7aa"
+    : getBlockColor(element.block)
+  : undefined,
         }}
         onClick={() => {
           if (visible) handleElementClick(element);
@@ -159,11 +252,18 @@ const PeriodicTable = () => {
         tabIndex={visible ? 0 : -1}
         title={visible ? `${element.name} (${element.symbol}) - #${element.number}` : ""}
       >
-        <strong className={`element-block ${element.block}`}>
-          {element.symbol}
-        </strong>
-        <span className="atomic-number">{element.number}</span>
-      </div>
+       <strong className={`element-block ${element.block}`}>
+  {element.symbol}
+</strong>
+
+<span className="atomic-number">
+  {element.number}
+</span>
+
+<span className="phase-icon">
+  {getPhaseIcon(phase)}
+</span>
+       </div>
     );
   };
 
@@ -176,8 +276,6 @@ const PeriodicTable = () => {
           onSearch={handleSearch}
           onSelectElement={handleSelectElement}
         />
-        <FilterPanel onFilterChange={handleFilterChange} />
-
         {hasActiveFilters && (
           <div className="results-count">
             <span className="results-count-number">{visibleCount}</span>
