@@ -34,7 +34,6 @@ const PeriodicTable = ({ temperature = 300 }) => {
 
   const [hoveredBlock, setHoveredBlock] = useState(null);
 
-
   // Tooltip state
   const [hoveredElement, setHoveredElement] = useState(null);
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -57,7 +56,6 @@ const PeriodicTable = ({ temperature = 300 }) => {
 
   const handleSelectElement = useCallback((element) => {
     setSelectedElement(element);
-    // Scroll the element into view with a highlight pulse
     const ref = elementRefs.current[element.number];
     if (ref) {
       ref.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
@@ -65,6 +63,7 @@ const PeriodicTable = ({ temperature = 300 }) => {
       setTimeout(() => ref.classList.remove("element-pulse"), 1200);
     }
   }, [setSelectedElement]);
+
   // Tooltip handlers
   const showTooltip = useCallback((element, event) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -143,10 +142,9 @@ const PeriodicTable = ({ temperature = 300 }) => {
   // Determine if an element matches current search + filters
   const isElementVisible = useCallback(
     (element) => {
-      // Hovered Block Filter
       const isBlockMatched = !hoveredBlock || element.block === hoveredBlock;
       if (!isBlockMatched) return false;
-      // Search filter
+      
       if (searchQuery) {
         const q = searchQuery.toLowerCase().trim();
         const matchesSearch =
@@ -156,18 +154,15 @@ const PeriodicTable = ({ temperature = 300 }) => {
         if (!matchesSearch) return false;
       }
 
-      // Type filter
       if (filters.type !== "all") {
         const classification = filters.classify(element.category);
         if (classification !== filters.type) return false;
       }
 
-      // Period filter
       if (filters.period !== "all") {
         if (element.period !== filters.period) return false;
       }
 
-      // Group filter
       if (filters.group !== "all") {
         if (element.group !== filters.group) return false;
       }
@@ -192,12 +187,10 @@ const PeriodicTable = ({ temperature = 300 }) => {
     [searchQuery, filters, hoveredBlock, getPhase, matchesElectronAffinity]
   );
 
-  // Filter data
   const mainElements = useMemo(() => getMainElements(elementsData), []);
   const lanthanides = useMemo(() => getLanthanides(elementsData), []);
   const actinides = useMemo(() => getActinides(elementsData), []);
 
-  // Count visible
   const visibleCount = useMemo(() => {
     return elementsData.filter(isElementVisible).length;
   }, [isElementVisible]);
@@ -342,6 +335,7 @@ phase-${phase}`}
             gridRow: element.period,
           })
         )}
+        
         {/* ADVANCED HOVER TOOLTIP */}
         {hoveredElement && tooltipVisible && (
           <div
@@ -389,7 +383,7 @@ phase-${phase}`}
       <div className="f-block">
         {lanthanides.map((element, index) =>
           renderElement(element, {
-            gridColumn: index + 4,       
+            gridColumn: index + 4,      
           })
         )}
       </div>
@@ -402,97 +396,6 @@ phase-${phase}`}
           })
         )}
       </div>
-
-      {/* Element Information Panel */}
-      {selectedElement && (
-        <div className="element-details-overlay" onClick={() => setSelectedElement(null)}>
-          <div
-            className="element-details"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="details-close-btn"
-              onClick={() => setSelectedElement(null)}
-              aria-label="Close details"
-              id="details-close-btn"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
-              </svg>
-            </button>
-
-            <div className="details-header">
-              <div
-                className="details-symbol-badge"
-                style={{ background: getBlockColor(selectedElement.block) }}
-              >
-                {selectedElement.symbol}
-              </div>
-              <div className="details-title">
-                <h2>{selectedElement.name}</h2>
-                <span className="details-category">{selectedElement.category}</span>
-              </div>
-            </div>
-
-            <div className="details-grid">
-              <div className="detail-item">
-                <span className="detail-label">Atomic Number</span>
-                <span className="detail-value">{selectedElement.number}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Atomic Mass</span>
-                <span className="detail-value">
-                  {selectedElement.atomic_mass != null
-                    ? parseFloat(selectedElement.atomic_mass).toFixed(4)
-                    : "—"}
-                </span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Group</span>
-                <span className="detail-value">{selectedElement.group ?? "—"}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Period</span>
-                <span className="detail-value">{selectedElement.period}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Block</span>
-                <span className="detail-value">{selectedElement.block}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Phase</span>
-                <span className="detail-value">{selectedElement.phase ?? "—"}</span>
-              </div>
-              <div className="detail-item detail-item-full">
-                <span className="detail-label">Discovered by</span>
-                <span className="detail-value">{selectedElement.discovered_by ?? "Unknown"}</span>
-              </div>
-              {selectedElement.electron_configuration_semantic && (
-                <div className="detail-item detail-item-full">
-                  <span className="detail-label">Electron Configuration</span>
-                  <span className="detail-value detail-value-mono">
-                    {selectedElement.electron_configuration_semantic}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <a
-              className="details-gallery-btn"
-              href={getElementGalleryUrl(selectedElement)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View {selectedElement.name} Gallery
-            </a>
-
-            {selectedElement.summary && (
-              <p className="details-summary">{selectedElement.summary}</p>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
